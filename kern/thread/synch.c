@@ -200,6 +200,32 @@ lock_acquire(struct lock *lock)
 }
 
 void
+lock_acquire2(struct lock* lock1, struct lock* lock2)
+{
+	KASSERT(lock1 != NULL);
+	KASSERT(lock2 != NULL);
+	KASSERT(lock_do_i_hold(lock1));
+	KASSERT(lock_do_i_hold(lock2));
+
+	spinlock_acquire(&lock1->lk_lock);
+	spinlock_acquire(&lock2->lk_lock);
+	while(true){
+		if(lock1->lk_thread == NULL){
+			if(lock2->lk_thread == NULL){ break;}
+			else{
+				lock_release(lock1);
+				wchan_sleep(lock2->lk_wchan, &lock2->lk_lock);
+			}
+		}else{
+			wchan_sleep(lock1->lk_wchan, &lock1->lk_lock);
+		}
+	}
+	spinlock_release(&lock2->lk_lock);
+	spinlock_release(&lock1->lk_lock);
+
+}
+
+void
 lock_release(struct lock *lock)
 {
 	KASSERT(lock != NULL);
@@ -213,6 +239,28 @@ lock_release(struct lock *lock)
 	spinlock_release(&lock->lk_lock);
 
 }
+
+void
+lock_release2(struct lock *lock1,struct lock *lock2)
+{
+	KASSERT(lock1 != NULL);
+	KASSERT(lock2 != NULL);
+	KASSERT(lock_do_i_hold(lock1));
+	KASSERT(lock_do_i_hold(lock2));
+	
+	spinlock_acquire(&lock1->lk_lock);
+	spinlock_acquire(&lock2->lk_lock);
+
+	wchan_wakeone(lock1->lk_wchan, &lock1->lk_lock);
+	wchan_wakeone(lock2->lk_wchan, &lock2->lk_lock);
+	lock1->lk_thread = NULL;
+	lock2->lk_thread = NULL;
+
+	spinlock_release(&lock2->lk_lock);
+	spinlock_release(&lock1->lk_lock);
+
+}
+
 
 bool
 lock_do_i_hold(struct lock *lock)

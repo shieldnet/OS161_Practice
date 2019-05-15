@@ -51,6 +51,34 @@ static struct lock *testlock;
 static struct cv *testcv;
 static struct semaphore *donesem;
 
+struct lock* NW;
+struct lock* NE;
+struct lock* SW;
+struct lock* SE;
+struct lock* print;
+int howmanyended = 0;
+
+//Direction 0:N, 1:E, 2:S, 3:W
+static const char* directions[] = {"N","E","S","W"};
+
+static const char *msgs[] = {
+        "approaching:",
+        "region1:    ",
+        "region2:    ",
+        "region3:    ",
+        "leaving:    "
+};
+
+/* use these constants for the first parameter of message */
+enum { APPROACHING, REGION1, REGION2, REGION3, LEAVING };
+
+static void
+message(int msg_nr, int carnumber, int cardirection, int destdirection)
+{
+  kprintf("%s car = %2d, direction = %s, destination = %s\n", msgs[msg_nr], carnumber, directions[cardirection], directions[destdirection]);
+}
+
+
 static
 void
 inititems(void)
@@ -218,6 +246,126 @@ locktest(int nargs, char **args)
 	kprintf("Lock test done.\n");
 
 	return 0;
+}
+
+static
+void
+gostraight(unsigned long cardirection, unsigned long carnumber) {
+  if (cardirection==0) {
+    int i = 0;
+    int destination=2;
+    
+    lock_acquire2(NW,SW);
+
+    //Approaching
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=1;
+    //Region 1
+    message (i,carnumber,cardirection,destination);
+    
+    
+    i=2;
+    //Region 2
+    message (i,carnumber,cardirection,destination);
+
+
+    i=4;
+    //Leaving
+    message (i,carnumber,cardirection,destination);
+    
+
+    lock_release2(NW,SW);
+
+	 }
+	
+  else if (cardirection==1) {
+    int i = 0;
+    int destination=3;
+
+    lock_acquire2(NE,NW);
+
+    //
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=1;
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=2;
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=4;
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    lock_release2(NE,NW);
+	
+	}
+
+	else if (cardirection==2) {
+    int i = 0;
+    int destination=0;
+
+    lock_acquire2(SE,NE);
+
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=1;
+    
+    message (i,carnumber,cardirection,destination);
+
+
+    i=2;
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=4;
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    lock_release2(SE,NE);
+
+	
+	}
+
+	else if (cardirection==3) {
+    int i = 0;
+    int destination=1;
+
+    lock_acquire2(SW,SE);
+
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=1;
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=2;
+    
+    message (i,carnumber,cardirection,destination);
+    
+
+    i=4;
+    
+    message (i,carnumber,cardirection,destination);
+    
+    lock_release2(SW,SE);
+	}
+     
 }
 
 static
@@ -397,5 +545,26 @@ cvtest2(int nargs, char **args)
 	}
 
 	kprintf("cvtest2 done\n");
+	gostraight(0,0);
 	return 0;
 }
+
+
+// From Here, 2019-05-15, 20146290 KimSeongmin
+
+/*
+ * gostraight()
+ *
+ * Arguments:
+ *      unsigned long cardirection: the direction from which the car
+ *              approaches the intersection.
+ *      unsigned long carnumber: the car id number for printing purposes.
+ *
+ * Returns:
+ *      nothing.
+ *
+ * Notes:
+ *      This function should implement passing straight through the
+ *      intersection from any direction.
+ *      Write and comment this function.
+ */
