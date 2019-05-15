@@ -72,131 +72,69 @@ static const char *msgs[] = {
 /* use these constants for the first parameter of message */
 enum { APPROACHING, REGION1, REGION2, REGION3, LEAVING };
 
-static void
+static
+void
 message(int msg_nr, int carnumber, int cardirection, int destdirection)
 {
-  kprintf("%s car = %2d, direction = %s, destination = %s\n", msgs[msg_nr], carnumber, directions[cardirection], directions[destdirection]);
+	kprintf("%s CAR = %2d, FROM = %s, TO = %s [20146290]\n", msgs[msg_nr], carnumber, directions[cardirection], directions[destdirection]);
 }
 
 
 static
 void
 gostraight(unsigned long cardirection, unsigned long carnumber) {
-  if (cardirection==0) {
-    int i = 0;
-    int destination=2;
+	if (cardirection==0) {
+		int i = 0;
+		int destination=2;
     
-    lock_acquire2(NW,SW);
-
-    //Approaching
-    message (i,carnumber,cardirection,destination);
-    
-
-    i=1;
-    //Region 1
-    message (i,carnumber,cardirection,destination);
-    
-    
-    i=2;
-    //Region 2
-    message (i,carnumber,cardirection,destination);
-
-
-    i=4;
-    //Leaving
-    message (i,carnumber,cardirection,destination);
-    
-
-    lock_release2(NW,SW);
-
-	 }
-	
-  else if (cardirection==1) {
-    int i = 0;
-    int destination=3;
-
-    lock_acquire2(NE,NW);
-
-    //
-    message (i,carnumber,cardirection,destination);
-    
-
-    i=1;
-    
-    message (i,carnumber,cardirection,destination);
-    
-
-    i=2;
-    
-    message (i,carnumber,cardirection,destination);
-    
-
-    i=4;
-    
-    message (i,carnumber,cardirection,destination);
-    
-
-    lock_release2(NE,NW);
-	
+		lock_acquire2(NW,SW);
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			if(i==3){continue;}
+			message (i,carnumber,cardirection,destination);
+		}
+		lock_release2(NW,SW);
 	}
+	else if (cardirection==1) {
+		int i = 0;
+		int destination=3;
 
+		lock_acquire2(NE,NW);
+
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			if(i==3){continue;}
+			message (i,carnumber,cardirection,destination);
+		}
+		lock_release2(NE,NW);
+	}
 	else if (cardirection==2) {
-    int i = 0;
-    int destination=0;
+    	int i = 0;
+    	int destination=0;
 
-    lock_acquire2(SE,NE);
+    	lock_acquire2(SE,NE);
 
-    
-    message (i,carnumber,cardirection,destination);
-    
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			if(i==3){continue;}
+			message (i,carnumber,cardirection,destination);
+		}
 
-    i=1;
-    
-    message (i,carnumber,cardirection,destination);
-
-
-    i=2;
-    
-    message (i,carnumber,cardirection,destination);
-    
-
-    i=4;
-    
-    message (i,carnumber,cardirection,destination);
-    
-
-    lock_release2(SE,NE);
-
-	
+    	lock_release2(SE,NE);	
 	}
-
 	else if (cardirection==3) {
-    int i = 0;
-    int destination=1;
+		int i = 0;
+		int destination=1;
+   		lock_acquire2(SW,SE);
 
-    lock_acquire2(SW,SE);
-
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			if(i==3){continue;}
+			message (i,carnumber,cardirection,destination);
+		}
     
-    message (i,carnumber,cardirection,destination);
-    
-
-    i=1;
-    
-    message (i,carnumber,cardirection,destination);
-    
-
-    i=2;
-    
-    message (i,carnumber,cardirection,destination);
-    
-
-    i=4;
-    
-    message (i,carnumber,cardirection,destination);
-    
-    lock_release2(SW,SE);
+   		lock_release2(SW,SE);
 	}
-     
 }
 
 static
@@ -227,24 +165,62 @@ inititems(void)
 			panic("synchtest: sem_create failed\n");
 		}
 	}
+
+	/* initialize locks */
+	if(NW==NULL){
+		NW = lock_create("NW");
+		if(NW==NULL){
+			panic("synchtest: NW lock_create failed\n");
+		}
+	}
+	if(NE==NULL){
+		NE = lock_create("NE");
+		if(NE==NULL){
+			panic("synchtest: NE lock_create failed\n");
+		}
+	}
+	if(SE==NULL){
+		SE = lock_create("SE");
+		if(SE==NULL){
+			panic("synchtest: SE lock_create failed\n");
+		}
+	}
+	if(SW==NULL){
+		SW = lock_create("SW");
+		if(SW==NULL){
+			panic("synchtest: SW lock_create failed\n");
+		}
+	}
+	if(print==NULL){
+		print = lock_create("print");
+		if(print==NULL){
+			panic("synchtest: print lock_create failed\n");
+		}
+	}
 }
 
 static
 void
 semtestthread(void *junk, unsigned long num)
 {
-	int i;
+	int car_dir=0;
 	(void)junk;
 
 	/*
 	 * Only one of these should print at a time.
 	 */
+
 	P(testsem);
-	kprintf("Thread %2lu: ", num);
+	car_dir = random()%4;
+	kprintf("==== Thread %2lu Passing ====\n", num);
+	gostraight(car_dir,num);
+	kprintf("==== Thread %2lu Passed  ====", num);
+	/*
 	for (i=0; i<NSEMLOOPS; i++) {
 		kprintf("%c", (int)num+64);
 	}
-	kprintf("\n");
+	*/
+	kprintf("\n\n");
 	V(donesem);
 }
 
@@ -275,7 +251,7 @@ semtest(int nargs, char **args)
 		V(testsem);
 		P(donesem);
 	}
-	gostraight(0,0);
+	//gostraight(0,0);
 	/* so we can run it again */
 	V(testsem);
 	V(testsem);
@@ -546,7 +522,7 @@ cvtest2(int nargs, char **args)
 	}
 
 	kprintf("cvtest2 done\n");
-	gostraight(0,0);
+	//gostraight(0,0);
 	return 0;
 }
 

@@ -204,14 +204,18 @@ lock_acquire2(struct lock* lock1, struct lock* lock2)
 {
 	KASSERT(lock1 != NULL);
 	KASSERT(lock2 != NULL);
-	KASSERT(lock_do_i_hold(lock1));
-	KASSERT(lock_do_i_hold(lock2));
+	KASSERT(!lock_do_i_hold(lock1));
+	KASSERT(!lock_do_i_hold(lock2));
 
 	spinlock_acquire(&lock1->lk_lock);
 	spinlock_acquire(&lock2->lk_lock);
 	while(true){
 		if(lock1->lk_thread == NULL){
-			if(lock2->lk_thread == NULL){ break;}
+			if(lock2->lk_thread == NULL){ 
+				lock1->lk_thread=curthread;
+				lock2->lk_thread=curthread;
+				break;
+			}
 			else{
 				lock_release(lock1);
 				wchan_sleep(lock2->lk_wchan, &lock2->lk_lock);
@@ -245,6 +249,7 @@ lock_release2(struct lock *lock1,struct lock *lock2)
 {
 	KASSERT(lock1 != NULL);
 	KASSERT(lock2 != NULL);
+
 	KASSERT(lock_do_i_hold(lock1));
 	KASSERT(lock_do_i_hold(lock2));
 	
@@ -253,6 +258,7 @@ lock_release2(struct lock *lock1,struct lock *lock2)
 
 	wchan_wakeone(lock1->lk_wchan, &lock1->lk_lock);
 	wchan_wakeone(lock2->lk_wchan, &lock2->lk_lock);
+
 	lock1->lk_thread = NULL;
 	lock2->lk_thread = NULL;
 
