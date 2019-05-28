@@ -96,7 +96,10 @@ void lock_destroy(struct lock *);
 void lock_acquire(struct lock *);
 void lock_release(struct lock *);
 void lock_acquire2(struct lock*, struct lock*);
+void lock_acquire3(struct lock*, struct lock*, struct lock*);
 void lock_release2(struct lock*, struct lock *);
+void lock_release3(struct lock*, struct lock*, struct lock*);
+
 bool lock_do_i_hold(struct lock *);
 
 
