@@ -230,6 +230,49 @@ lock_acquire2(struct lock* lock1, struct lock* lock2)
 }
 
 void
+lock_acquire3(struct lock* lock1, struct lock* lock2, struct lock* lock3)
+{
+	KASSERT(lock1 != NULL);
+	KASSERT(lock2 != NULL);
+	KASSERT(lock3 != NULL);
+	KASSERT(!lock_do_i_hold(lock1));
+	KASSERT(!lock_do_i_hold(lock2));
+	KASSERT(!lock_do_i_hold(lock3));
+
+	spinlock_acquire(&lock1->lk_lock);
+	spinlock_acquire(&lock2->lk_lock);
+	spinlock_acquire(&lock3->lk_lock);
+
+	while(true){
+		if(lock1->lk_thread == NULL){
+			if(lock2->lk_thread == NULL){ 
+				if(lock3->lk_thread == NULL){
+					lock1->lk_thread=curthread;
+					lock2->lk_thread=curthread;
+					lock3->lk_thread=curthread;
+					break;
+				}
+				else{
+					lock_release(lock3);
+					wchan_sleep(lock3->lk_wchan, &lock3->lk_lock);
+				}
+			}
+			else{
+				lock_release(lock2);
+				wchan_sleep(lock2->lk_wchan, &lock2->lk_lock);
+			}
+		}else{
+			lock_release(lock1);
+			wchan_sleep(lock1->lk_wchan, &lock1->lk_lock);
+		}
+	}
+	spinlock_release(&lock3->lk_lock);
+	spinlock_release(&lock2->lk_lock);
+	spinlock_release(&lock1->lk_lock);
+
+}
+
+void
 lock_release(struct lock *lock)
 {
 	KASSERT(lock != NULL);
@@ -262,6 +305,35 @@ lock_release2(struct lock *lock1,struct lock *lock2)
 	lock1->lk_thread = NULL;
 	lock2->lk_thread = NULL;
 
+	spinlock_release(&lock2->lk_lock);
+	spinlock_release(&lock1->lk_lock);
+
+}
+
+void
+lock_release3(struct lock *lock1,struct lock *lock2, struct lock* lock3)
+{
+	KASSERT(lock1 != NULL);
+	KASSERT(lock2 != NULL);
+	KASSERT(lock3 != NULL);
+
+	KASSERT(lock_do_i_hold(lock1));
+	KASSERT(lock_do_i_hold(lock2));
+	KASSERT(lock_do_i_hold(lock3));
+	
+	spinlock_acquire(&lock1->lk_lock);
+	spinlock_acquire(&lock2->lk_lock);
+	spinlock_acquire(&lock3->lk_lock);
+
+	wchan_wakeone(lock1->lk_wchan, &lock1->lk_lock);
+	wchan_wakeone(lock2->lk_wchan, &lock2->lk_lock);
+	wchan_wakeone(lock3->lk_wchan, &lock3->lk_lock);
+
+	lock1->lk_thread = NULL;
+	lock2->lk_thread = NULL;
+	lock3->lk_thread = NULL;
+
+	spinlock_release(&lock3->lk_lock);
 	spinlock_release(&lock2->lk_lock);
 	spinlock_release(&lock1->lk_lock);
 

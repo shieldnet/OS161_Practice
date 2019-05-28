@@ -83,6 +83,7 @@ message(int msg_nr, int carnumber, int cardirection, int destdirection)
 static
 void
 gostraight(unsigned long cardirection, unsigned long carnumber) {
+	kprintf("/---GO STRAIGHT---/\n");
 	if (cardirection==0) {
 		int i = 0;
 		int destination=2;
@@ -136,6 +137,119 @@ gostraight(unsigned long cardirection, unsigned long carnumber) {
    		lock_release2(SW,SE);
 	}
 }
+
+static
+void
+turnleft(unsigned long cardirection, unsigned long carnumber) {
+	kprintf("/---TURN LEFT---/\n");
+	if (cardirection==0) {
+		int i = 0;
+		int destination=1;
+    
+		lock_acquire3(NW,SW,SE);
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			message (i,carnumber,cardirection,destination);
+		}
+		lock_release3(NW,SW,SE);
+	}
+	else if (cardirection==1) {
+		int i = 0;
+		int destination=2;
+
+		lock_acquire3(NE,NW,SW);
+
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			message (i,carnumber,cardirection,destination);
+		}
+		lock_release3(NE,NW,SW);
+	}
+	else if (cardirection==2) {
+    	int i = 0;
+    	int destination=3;
+
+    	lock_acquire3(SE,NE,NW);
+
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			message (i,carnumber,cardirection,destination);
+		}
+
+    	lock_release3(SE,NE,NW);	
+	}
+	else if (cardirection==3) {
+		int i = 0;
+		int destination=0;
+   		lock_acquire3(SW,SE,NE);
+
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			message (i,carnumber,cardirection,destination);
+		}
+    
+   		lock_release3(SW,SE,NE);
+	}
+}
+
+static
+void
+turnright(unsigned long cardirection, unsigned long carnumber) {
+	kprintf("/---TURN RIGHT---/\n");
+	if (cardirection==0) {
+		int i = 0;
+		int destination=3;
+    
+		lock_acquire(NW);
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			if(i==2 || i==3)continue;
+			message (i,carnumber,cardirection,destination);
+		}
+		lock_release(NW);
+	}
+	else if (cardirection==1) {
+		int i = 0;
+		int destination=0;
+
+		lock_acquire(NE);
+
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) -->Leave
+			if(i==2 || i==3)continue;
+			message (i,carnumber,cardirection,destination);
+		}
+		lock_release(NE);
+	}
+	else if (cardirection==2) {
+    	int i = 0;
+    	int destination=1;
+
+    	lock_acquire(SE);
+
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			if(i==2 || i==3)continue;
+			message (i,carnumber,cardirection,destination);
+		}
+
+    	lock_release(SE);	
+	}
+	else if (cardirection==3) {
+		int i = 0;
+		int destination=2;
+   		lock_acquire(SW);
+
+		for(i =0;i<5;i++){
+			//Approaching --> Region 1(first) --> Region2(second) -->Leave
+			if(i==2 || i==3)continue;
+			message (i,carnumber,cardirection,destination);
+		}
+    
+   		lock_release(SW);
+	}
+}
+
 
 static
 void
@@ -203,7 +317,8 @@ static
 void
 semtestthread(void *junk, unsigned long num)
 {
-	int car_dir=0;
+	int car_dir = 0;
+	int car_movement = 0;
 	(void)junk;
 
 	/*
@@ -212,8 +327,12 @@ semtestthread(void *junk, unsigned long num)
 
 	P(testsem);
 	car_dir = random()%4;
+	if(num!=14){car_dir = 0;}
+	car_movement = random()%3;
 	kprintf("==== Thread %2lu Passing ====\n", num);
-	gostraight(car_dir,num);
+	if(car_movement == 0) gostraight(car_dir,num);
+	else if(car_movement == 1) turnleft(car_dir,num);
+	else if(car_movement == 2) turnright(car_dir,num);
 	kprintf("==== Thread %2lu Passed  ====", num);
 	/*
 	for (i=0; i<NSEMLOOPS; i++) {
