@@ -150,6 +150,17 @@ int thread_fork_priority(const char *name, unsigned int priority,
 	    				struct proc *proc, void (*func)(void *, unsigned long),
 	    				void *data1, unsigned long data2);
 
+/* threadlist sorting function declare(20146290) */
+/* This swap function swaps two treadlist nodes in place. Helper function for bubblesort*/
+void threadlist_swap(struct threadlistnode* a, struct threadlistnode* b);
+void threadlist_bubblesort(struct threadlist* tl);
+void printthreadlist(struct threadlist* tl);
+
+
+
+
+
+
 /*
  * Cause the current thread to exit.
  * Interrupts need not be disabled.

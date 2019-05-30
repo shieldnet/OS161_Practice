@@ -195,6 +195,7 @@ thread_create_priority(const char *name, unsigned int priority)
 
 	/* If you add to struct thread, be sure to initialize here */
 	thread->t_priority = priority;
+	kprintf("THREADNAME : %s, PRIORITY : %d\n",name,priority);
 	return thread;
 }
 
@@ -641,7 +642,7 @@ thread_fork_priority(const char *name,
 
 	/* Lock the current cpu's run queue and make the new thread runnable */
 	thread_make_runnable(newthread, false);
-
+	
 	return 0;
 }
 
@@ -934,7 +935,6 @@ void threadlist_bubblesort(struct threadlist* tl){
 	struct threadlistnode* current;
 	unsigned int size = tl->tl_count;
 	unsigned int i,j;
-
 	for(i=0; i<size; i++){
 		current = firstNode;
 		for(j=1; j<size-i; j++){
@@ -957,7 +957,28 @@ void threadlist_swap(struct threadlistnode* a, struct threadlistnode* b){
 	a->tln_prev = b;
 }
 
+/* Function to print lists useful for debugging */
+void printthreadlist(struct threadlist* tl){
 
+	kprintf("\n\n*************************** Printing threadlist *************************** \n");
+	kprintf("Number of nodes in this list = %u \n" , tl->tl_count);
+
+	if(threadlist_isempty(tl)){
+		kprintf("\n Threadlist is empty. No nodes to show \n");
+	}
+	else{
+		unsigned int count = 1;
+		struct threadlistnode *temp = tl->tl_head.tln_next;
+
+		kprintf("Printing threads in threadlist...\n");
+		while(temp->tln_self != NULL){
+			kprintf("Node#%u: Priority = %u \n", count++, temp->tln_self->t_priority);
+			temp = temp->tln_next;
+		}
+	}
+
+	kprintf("\n****************************************************************** \n\n");
+}
 
 void
 schedule(void)
@@ -974,9 +995,8 @@ schedule(void)
 	/* Disable interrupts */
 	int spl;
 	spl = splhigh();
-
 	threadlist_bubblesort(&curcpu->c_runqueue);
-
+	//printthreadlist(&curcpu->c_runqueue);
 	// re-enable interrupts
 	splx(spl);
 	/* Release run queue */
