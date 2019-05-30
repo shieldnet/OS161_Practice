@@ -924,6 +924,40 @@ thread_yield(void)
  */
 
 
+/* Given a threadlist, we sort the threadlist nodes by priority using bubblesort*/
+void threadlist_bubblesort(struct threadlist* tl){
+	if(tl->tl_count  < 2){
+		return;
+	}
+
+	struct threadlistnode* firstNode = tl->tl_head.tln_next;
+	struct threadlistnode* current;
+	unsigned int size = tl->tl_count;
+	unsigned int i,j;
+
+	for(i=0; i<size; i++){
+		current = firstNode;
+		for(j=1; j<size-i; j++){
+			if(current->tln_self->t_priority >= current->tln_next->tln_self->t_priority){
+				threadlist_swap(current, current->tln_next);
+				if(current == firstNode) firstNode = current->tln_prev;
+			}
+			else current = current->tln_next;
+		}
+	}
+}
+
+/* This swap function swaps two treadlist nodes in place. Helper function for bubblesort*/
+void threadlist_swap(struct threadlistnode* a, struct threadlistnode* b){
+	a->tln_next = b->tln_next;
+	b->tln_prev = a->tln_prev;
+	a->tln_prev->tln_next = b;
+	b->tln_next->tln_prev = a;
+	b->tln_next = a;
+	a->tln_prev = b;
+}
+
+
 
 void
 schedule(void)
@@ -941,7 +975,12 @@ schedule(void)
 	int spl;
 	spl = splhigh();
 
+	threadlist_bubblesort(&curcpu->c_runqueue);
 
+	// re-enable interrupts
+	splx(spl);
+	/* Release run queue */
+	spinlock_release(&curcpu->c_runqueue_lock);
 
 }
 
