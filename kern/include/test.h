@@ -49,6 +49,8 @@ int threadlisttest(int, char **);
 int threadtest(int, char **);
 int threadtest2(int, char **);
 int threadtest3(int, char **);
+
+int threadtest_synch(int, char**);
 int semtest(int, char **);
 int locktest(int, char **);
 int cvtest(int, char **);

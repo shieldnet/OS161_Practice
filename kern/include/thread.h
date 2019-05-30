@@ -157,10 +157,6 @@ void threadlist_bubblesort(struct threadlist* tl);
 void printthreadlist(struct threadlist* tl);
 
 
-
-
-
-
 /*
  * Cause the current thread to exit.
  * Interrupts need not be disabled.

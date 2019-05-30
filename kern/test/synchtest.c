@@ -32,9 +32,11 @@
  */
 
 #include <types.h>
+#include <current.h>
 #include <lib.h>
 #include <clock.h>
 #include <thread.h>
+#include <threadlist.h>
 #include <synch.h>
 #include <test.h>
 
@@ -56,6 +58,7 @@ struct lock* NE;
 struct lock* SW;
 struct lock* SE;
 struct lock* print;
+
 int howmanyended = 0;
 
 //Direction 0:N, 1:E, 2:S, 3:W
@@ -68,6 +71,8 @@ static const char *msgs[] = {
         "region3:    ",
         "leaving:    "
 };
+
+
 
 /* use these constants for the first parameter of message */
 enum { APPROACHING, REGION1, REGION2, REGION3, LEAVING };
@@ -320,20 +325,22 @@ semtestthread(void *junk, unsigned long num)
 	int car_dir = 0;
 	int car_movement = 0;
 	(void)junk;
-
 	/*
 	 * Only one of these should print at a time.
 	 */
 
 	P(testsem);
+	kprintf("Priority : %d\n",curthread->t_priority);
+	
 	car_dir = random()%4;
-	if(num!=14){car_dir = 0;}
 	car_movement = random()%3;
+	
 	kprintf("==== Thread %2lu Passing ====\n", num);
 	if(car_movement == 0) gostraight(car_dir,num);
 	else if(car_movement == 1) turnleft(car_dir,num);
 	else if(car_movement == 2) turnright(car_dir,num);
 	kprintf("==== Thread %2lu Passed  ====", num);
+	
 	/*
 	for (i=0; i<NSEMLOOPS; i++) {
 		kprintf("%c", (int)num+64);
@@ -359,7 +366,7 @@ semtest(int nargs, char **args)
 	kprintf("ok\n");
 
 	for (i=0; i<NTHREADS; i++) {
-		result = thread_fork_priority("semtest", random()%32, NULL, semtestthread, NULL, i);
+		result = thread_fork_priority("semtest", i, NULL, semtestthread, NULL, i);
 		if (result) {
 			panic("semtest: thread_fork failed: %s\n",
 			      strerror(result));
@@ -642,23 +649,3 @@ cvtest2(int nargs, char **args)
 	//gostraight(0,0);
 	return 0;
 }
-
-
-// From Here, 2019-05-15, 20146290 KimSeongmin
-
-/*
- * gostraight()
- *
- * Arguments:
- *      unsigned long cardirection: the direction from which the car
- *              approaches the intersection.
- *      unsigned long carnumber: the car id number for printing purposes.
- *
- * Returns:
- *      nothing.
- *
- * Notes:
- *      This function should implement passing straight through the
- *      intersection from any direction.
- *      Write and comment this function.
- */

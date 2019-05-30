@@ -195,7 +195,7 @@ thread_create_priority(const char *name, unsigned int priority)
 
 	/* If you add to struct thread, be sure to initialize here */
 	thread->t_priority = priority;
-	kprintf("THREADNAME : %s, PRIORITY : %d\n",name,priority);
+	//kprintf("THREADNAME : %s, PRIORITY : %d\n",name,priority);
 	return thread;
 }
 

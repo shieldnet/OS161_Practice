@@ -102,7 +102,7 @@ runthreads(int doloud)
 
 	for (i=0; i<NTHREADS; i++) {
 		snprintf(name, sizeof(name), "threadtest%d", i);
-		result = thread_fork_priority(name, i, NULL,
+		result = thread_fork(name, NULL,
 				     doloud ? loudthread : quietthread,
 				     NULL, i);
 		if (result) {
