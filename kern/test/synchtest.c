@@ -359,7 +359,7 @@ semtest(int nargs, char **args)
 	kprintf("ok\n");
 
 	for (i=0; i<NTHREADS; i++) {
-		result = thread_fork("semtest", NULL, semtestthread, NULL, i);
+		result = thread_fork_priority("semtest", random()%32, NULL, semtestthread, NULL, i);
 		if (result) {
 			panic("semtest: thread_fork failed: %s\n",
 			      strerror(result));
@@ -370,8 +370,6 @@ semtest(int nargs, char **args)
 		V(testsem);
 		P(donesem);
 	}
-	//gostraight(0,0);
-	/* so we can run it again */
 	V(testsem);
 	V(testsem);
 

@@ -74,6 +74,8 @@ struct thread {
 	const char *t_wchan_name;	/* Name of wait channel, if sleeping */
 	threadstate_t t_state;		/* State this thread is in */
 
+	unsigned int t_priority;	/* Priority of thread */
+
 	/*
 	 * Thread subsystem internal fields.
 	 */
@@ -143,6 +145,10 @@ void thread_shutdown(void);
 int thread_fork(const char *name, struct proc *proc,
                 void (*func)(void *, unsigned long),
                 void *data1, unsigned long data2);
+
+int thread_fork_priority(const char *name, unsigned int priority,
+	    				struct proc *proc, void (*func)(void *, unsigned long),
+	    				void *data1, unsigned long data2);
 
 /*
  * Cause the current thread to exit.
